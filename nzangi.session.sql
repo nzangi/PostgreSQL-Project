@@ -75,7 +75,23 @@ LEFT JOIN (
 b ON b.parent_id=a.parent_id
 ORDER BY a.parent_id;
 
+--@block
+SELECT DISTINCT parent_id,status FROM
+parent_table a WHERE lower(status) = 'active'
+UNION
+SELECT DISTINCT parent_id,status FROM
+parent_table a WHERE lower(status) = 'inactive' 
+and NOT EXISTS (
+    SELECT 1 FROM parent_table b 
+    WHERE b.status = 'Active' AND 
+    b.parent_id=a.parent_id
+) ORDER BY parent_id;
 
+--@block
+
+SELECT parent_id,min(status) as status FROM 
+parent_table GROUP BY parent_id
+ORDER BY parent_id
 ;
 --@block
 UPDATE parent_table SET status = 'InActive'
