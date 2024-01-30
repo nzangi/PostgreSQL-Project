@@ -5,8 +5,8 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "name": "nzangi",
-            "database": "sqlguery",
+            "name": "sqlquestions",
+            "database": "sqlquestions",
             "username": "nzangi"
         }
     ]
