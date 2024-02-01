@@ -150,3 +150,71 @@ ORDER BY DEPT_NAME ASC
 
 --@block
 SELECT * FROM employee;
+
+--@block
+create table doctors
+(
+id int primary key,
+name varchar(50) not null,
+speciality varchar(100),
+hospital varchar(50),
+city varchar(50),
+consultation_fee int
+);
+
+insert into doctors values
+(1, 'Dr. Shashank', 'Ayurveda', 'Apollo Hospital', 'Bangalore', 2500),
+(2, 'Dr. Abdul', 'Homeopathy', 'Fortis Hospital', 'Bangalore', 2000),
+(3, 'Dr. Shwetha', 'Homeopathy', 'KMC Hospital', 'Manipal', 1000),
+(4, 'Dr. Murphy', 'Dermatology', 'KMC Hospital', 'Manipal', 1500),
+(5, 'Dr. Farhana', 'Physician', 'Gleneagles Hospital', 'Bangalore', 1700),
+(6, 'Dr. Maryam', 'Physician', 'Gleneagles Hospital', 'Bangalore', 1500);
+
+--@block
+SELECT * FROM doctors d1 JOIN doctors d2 ON
+d1.hospital = d2.hospital and d1.speciality 
+<> d2.speciality and d1.id <> d2.id;
+
+--@block
+-- Now find the doctors who work in same 
+-- hospital irrespective of their speciality.
+SELECT d1.name,d1.speciality,d1.hospital FROM 
+doctors d1 JOIN doctors d2 ON 
+d1.hospital = d2.hospital and d1.id<>d2.id;
+
+--@block
+create table login_details(
+login_id int primary key,
+user_name varchar(50) not null,
+login_date date);
+
+delete from login_details;
+insert into login_details values
+(101, 'Michael', current_date),
+(102, 'James', current_date),
+(103, 'Stewart', current_date+1),
+(104, 'Stewart', current_date+1),
+(105, 'Stewart', current_date+1),
+(106, 'Michael', current_date+2),
+(107, 'Michael', current_date+2),
+(108, 'Stewart', current_date+3),
+(109, 'Stewart', current_date+3),
+(110, 'James', current_date+4),
+(111, 'James', current_date+4),
+(112, 'James', current_date+5),
+(113, 'James', current_date+6);
+
+--@block
+select *,
+case when user_name = lead(user_name) over(order by login_id)
+and  user_name = lead(user_name,2) over(order by login_id)
+then user_name else null end as repeated_names
+from login_details
+--@block
+SELECT DISTINCT repeated_names FROM(
+SELECT *, 
+CASE WHEN user_name = LEAD(user_name)  OVER (ORDER BY login_id)
+AND user_name = LEAD(user_name,2)  OVER (ORDER BY login_id)
+THEN user_name ELSE NULL END
+as repeated_names FROM login_details) x 
+WHERE x.repeated_names is not NULL;
