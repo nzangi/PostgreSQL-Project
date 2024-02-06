@@ -218,3 +218,148 @@ AND user_name = LEAD(user_name,2)  OVER (ORDER BY login_id)
 THEN user_name ELSE NULL END
 as repeated_names FROM login_details) x 
 WHERE x.repeated_names is not NULL;
+
+--@block
+SELECT x.* FROM employee e JOIN (
+    SELECT *,
+max(salary) OVER(PARTITION BY dept_name) as max_salary,
+min(salary) OVER(PARTITION BY dept_name) as min_salary
+FROM employee
+) as x 
+ON e.emp_id=x.emp_id AND (e.salary=x.max_salary or e.salary=min_salary)
+ORDER BY x.dept_name,x.salary;
+
+--@block
+-- From the students table, write a SQL query to interchange the adjacent student names.
+create table students
+(
+id int primary key,
+student_name varchar(50) not null
+);
+insert into students values
+(1, 'James'),
+(2, 'Michael'),
+(3, 'George'),
+(4, 'Stewart'),
+(5, 'Robin');
+
+--@block
+SELECT * FROM students;
+--@block
+SELECT id,student_name,
+    CASE WHEN id % 2 <> 0 THEN lead(student_name,1,student_name) OVER(ORDER BY id)
+    WHEN id % 2 = 0 THEN lag(student_name) OVER(ORDER BY id) 
+    END as new_student_name FROM students;
+
+--@block
+create table weather
+(
+id int,
+city varchar(50),
+temperature int,
+day date
+);
+insert into weather values
+(1, 'London', -1, to_date('2021-01-01','yyyy-mm-dd')),
+(2, 'London', -2, to_date('2021-01-02','yyyy-mm-dd')),
+(3, 'London', 4, to_date('2021-01-03','yyyy-mm-dd')),
+(4, 'London', 1, to_date('2021-01-04','yyyy-mm-dd')),
+(5, 'London', -2, to_date('2021-01-05','yyyy-mm-dd')),
+(6, 'London', -5, to_date('2021-01-06','yyyy-mm-dd')),
+(7, 'London', -7, to_date('2021-01-07','yyyy-mm-dd')),
+(8, 'London', 5, to_date('2021-01-08','yyyy-mm-dd'));
+
+--@block
+SELECT * FROM (
+    SELECT *,
+        CASE WHEN temperature < 0
+            AND LEAD(temperature) OVER(ORDER BY day) < 0
+            AND LEAD(temperature,2) OVER (ORDER BY day) < 0
+        THEN 'Y'
+        WHEN temperature < 0
+            AND LEAD(temperature) OVER(ORDER BY day) < 0
+            AND LAG(temperature) OVER(ORDER BY day) < 0
+        THEN 'Y'
+        WHEN temperature < 0
+            AND LAG(temperature) OVER(ORDER BY day) < 0
+            AND LAG(temperature,2) OVER(ORDER BY day) < 0
+        THEN 'Y'
+        END as flag FROM
+weather) x
+WHERE  x.flag='Y';
+
+--@block
+create table event_category
+(
+  event_name varchar(50),
+  category varchar(100)
+);
+
+create table physician_speciality
+(
+  physician_id int,
+  speciality varchar(50)
+);
+
+create table patient_treatment
+(
+  patient_id int,
+  event_name varchar(50),
+  physician_id int
+);
+
+
+insert into event_category values ('Chemotherapy','Procedure');
+insert into event_category values ('Radiation','Procedure');
+insert into event_category values ('Immunosuppressants','Prescription');
+insert into event_category values ('BTKI','Prescription');
+insert into event_category values ('Biopsy','Test');
+
+
+insert into physician_speciality values (1000,'Radiologist');
+insert into physician_speciality values (2000,'Oncologist');
+insert into physician_speciality values (3000,'Hermatologist');
+insert into physician_speciality values (4000,'Oncologist');
+insert into physician_speciality values (5000,'Pathologist');
+insert into physician_speciality values (6000,'Oncologist');
+
+
+insert into patient_treatment values (1,'Radiation', 1000);
+insert into patient_treatment values (2,'Chemotherapy', 2000);
+insert into patient_treatment values (1,'Biopsy', 1000);
+insert into patient_treatment values (3,'Immunosuppressants', 2000);
+insert into patient_treatment values (4,'BTKI', 3000);
+insert into patient_treatment values (5,'Radiation', 4000);
+insert into patient_treatment values (4,'Chemotherapy', 2000);
+insert into patient_treatment values (1,'Biopsy', 5000);
+insert into patient_treatment values (6,'Chemotherapy', 6000);
+
+--@block
+SELECT ps.speciality,count(1) as speciality_count FROM patient_treatment pt JOIN event_category ec ON 
+ec.event_name = pt.event_name JOIN physician_speciality ps ON ps.physician_id = pt.physician_id WHERE
+ec.category = 'Procedure' AND pt.physician_id NOT IN (
+    SELECT pt2.physician_id FROM patient_treatment pt2 JOIN event_category ec ON ec.event_name = pt2.event_name
+    WHERE ec.category in ('Prescription')
+)
+GROUP BY ps.speciality;
+
+--@block
+create table patient_logs
+(
+  account_id int,
+  date date,
+  patient_id int
+);
+
+insert into patient_logs values (1, to_date('02-01-2020','dd-mm-yyyy'), 100);
+insert into patient_logs values (1, to_date('27-01-2020','dd-mm-yyyy'), 200);
+insert into patient_logs values (2, to_date('01-01-2020','dd-mm-yyyy'), 300);
+insert into patient_logs values (2, to_date('21-01-2020','dd-mm-yyyy'), 400);
+insert into patient_logs values (2, to_date('21-01-2020','dd-mm-yyyy'), 300);
+insert into patient_logs values (2, to_date('01-01-2020','dd-mm-yyyy'), 500);
+insert into patient_logs values (3, to_date('20-01-2020','dd-mm-yyyy'), 400);
+insert into patient_logs values (1, to_date('04-03-2020','dd-mm-yyyy'), 500);
+insert into patient_logs values (3, to_date('20-01-2020','dd-mm-yyyy'), 450);
+
+--@block
+select * from patient_logs;
