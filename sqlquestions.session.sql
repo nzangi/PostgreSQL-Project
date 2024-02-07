@@ -362,4 +362,61 @@ insert into patient_logs values (1, to_date('04-03-2020','dd-mm-yyyy'), 500);
 insert into patient_logs values (3, to_date('20-01-2020','dd-mm-yyyy'), 450);
 
 --@block
-select * from patient_logs;
+
+SELECT a.month,a.account_id,a.number_of_unique_patients 
+FROM (
+    SELECT x.month,x.account_id,number_of_unique_patients,
+    row_number() OVER(PARTITION by x.month ORDER BY x.number_of_unique_patients DESC) as rn
+    FROM (
+        SELECT pl.month,pl.account_id,count(1) as number_of_unique_patients 
+        FROM (
+            SELECT DISTINCT to_char(date,'month') as month , account_id,patient_id from patient_logs
+        ) pl
+        GROUP BY pl.month,pl.account_id
+    ) x
+) a WHERE a.rn < 3;
+
+--@block
+drop table if exists weather cascade;
+create table if not exists weather
+	(
+		id 					int 				primary key,
+		city 				varchar(50) not null,
+		temperature int 				not null,
+		day 				date				not null
+	);
+
+delete from weather;
+insert into weather values
+	(1, 'London', -1, to_date('2021-01-01','yyyy-mm-dd')),
+	(2, 'London', -2, to_date('2021-01-02','yyyy-mm-dd')),
+	(3, 'London', 4, to_date('2021-01-03','yyyy-mm-dd')),
+	(4, 'London', 1, to_date('2021-01-04','yyyy-mm-dd')),
+	(5, 'London', -2, to_date('2021-01-05','yyyy-mm-dd')),
+	(6, 'London', -5, to_date('2021-01-06','yyyy-mm-dd')),
+	(7, 'London', -7, to_date('2021-01-07','yyyy-mm-dd')),
+	(8, 'London', 5, to_date('2021-01-08','yyyy-mm-dd')),
+	(9, 'London', -20, to_date('2021-01-09','yyyy-mm-dd')),
+	(10, 'London', 20, to_date('2021-01-10','yyyy-mm-dd')),
+	(11, 'London', 22, to_date('2021-01-11','yyyy-mm-dd')),
+	(12, 'London', -1, to_date('2021-01-12','yyyy-mm-dd')),
+	(13, 'London', -2, to_date('2021-01-13','yyyy-mm-dd')),
+	(14, 'London', -2, to_date('2021-01-14','yyyy-mm-dd')),
+	(15, 'London', -4, to_date('2021-01-15','yyyy-mm-dd')),
+	(16, 'London', -9, to_date('2021-01-16','yyyy-mm-dd')),
+	(17, 'London', 0, to_date('2021-01-17','yyyy-mm-dd')),
+	(18, 'London', -10, to_date('2021-01-18','yyyy-mm-dd')),
+	(19, 'London', -11, to_date('2021-01-19','yyyy-mm-dd')),
+	(20, 'London', -12, to_date('2021-01-20','yyyy-mm-dd')),
+	(21, 'London', -11, to_date('2021-01-21','yyyy-mm-dd'));
+COMMIT;
+
+--@block
+WITH 
+    t1 as (
+        SELECT *,id - row_number() OVER (ORDER BY id) as diff from weather w WHERE w.temperature <0
+    ),
+    t2 as (
+        SELECT *, count(*) OVER(PARTITION BY diff ORDER BY diff) as cnt FROM t1
+    )
+    SELECT id,city,temperature,day from t2 where t2.cnt=3;
