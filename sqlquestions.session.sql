@@ -420,3 +420,51 @@ WITH
         SELECT *, count(*) OVER(PARTITION BY diff ORDER BY diff) as cnt FROM t1
     )
     SELECT id,city,temperature,day from t2 where t2.cnt=3;
+
+--@block
+create or replace view vw_weather as
+select city, temperature from weather;
+--@block
+--select * from vw_weather ;
+WITH 
+    w as (SELECT *, row_number() OVER () as id FROM vw_weather),
+
+    t1 as (SELECT *, id - row_number() OVER (ORDER BY id) as diff FROM w WHERE w.temperature < 0),
+
+    t2 as (SELECT *, count(*) OVER(PARTITION by diff order by diff) as cnt from t1)
+
+SELECT city,temperature,id from t2 WHERE t2.cnt=5;
+
+
+--@block
+drop table if exists orders cascade;
+create table if not exists orders
+  (
+    order_id    varchar(20) primary key,
+    order_date  date        not null
+);
+
+delete from orders;
+insert into orders values
+  ('ORD1001', to_date('2021-Jan-01','yyyy-mon-dd')),
+  ('ORD1002', to_date('2021-Feb-01','yyyy-mon-dd')),
+  ('ORD1003', to_date('2021-Feb-02','yyyy-mon-dd')),
+  ('ORD1004', to_date('2021-Feb-03','yyyy-mon-dd')),
+  ('ORD1005', to_date('2021-Mar-01','yyyy-mon-dd')),
+  ('ORD1006', to_date('2021-Jun-01','yyyy-mon-dd')),
+  ('ORD1007', to_date('2021-Dec-25','yyyy-mon-dd')),
+  ('ORD1008', to_date('2021-Dec-26','yyyy-mon-dd'));
+COMMIT;
+
+--@block
+WITH 
+    t1 as (SELECT *, row_number() OVER(ORDER BY order_date) as rn,
+        order_date -CAST(row_number() OVER(ORDER BY order_date)::numeric as int) as diff from orders
+        ),
+    t2 as (
+        SELECT *,count(1) OVER(PARTITION by diff ) as cnt from t1
+    )
+
+SELECT order_id,order_date from t2 where cnt >=3;
+
+
